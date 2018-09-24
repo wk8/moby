@@ -18,24 +18,26 @@ func containerSpecFromGRPC(c *swarmapi.ContainerSpec) *types.ContainerSpec {
 		return nil
 	}
 	containerSpec := &types.ContainerSpec{
-		Image:      c.Image,
-		Labels:     c.Labels,
-		Command:    c.Command,
-		Args:       c.Args,
-		Hostname:   c.Hostname,
-		Env:        c.Env,
-		Dir:        c.Dir,
-		User:       c.User,
-		Groups:     c.Groups,
-		StopSignal: c.StopSignal,
-		TTY:        c.TTY,
-		OpenStdin:  c.OpenStdin,
-		ReadOnly:   c.ReadOnly,
-		Hosts:      c.Hosts,
-		Secrets:    secretReferencesFromGRPC(c.Secrets),
-		Configs:    configReferencesFromGRPC(c.Configs),
-		Isolation:  IsolationFromGRPC(c.Isolation),
-		Init:       initFromGRPC(c.Init),
+		Image:            c.Image,
+		Labels:           c.Labels,
+		Command:          c.Command,
+		Args:             c.Args,
+		Hostname:         c.Hostname,
+		Env:              c.Env,
+		Dir:              c.Dir,
+		User:             c.User,
+		Groups:           c.Groups,
+		StopSignal:       c.StopSignal,
+		TTY:              c.TTY,
+		OpenStdin:        c.OpenStdin,
+		ReadOnly:         c.ReadOnly,
+		Hosts:            c.Hosts,
+		Secrets:          secretReferencesFromGRPC(c.Secrets),
+		Configs:          configReferencesFromGRPC(c.Configs),
+		Isolation:        IsolationFromGRPC(c.Isolation),
+		Init:             initFromGRPC(c.Init),
+		MemorySwap:       c.MemorySwap,
+		MemorySwappiness: int64PointerFromGRPC(c.MemorySwappiness),
 	}
 
 	if c.DNSConfig != nil {
@@ -120,12 +122,25 @@ func containerSpecFromGRPC(c *swarmapi.ContainerSpec) *types.ContainerSpec {
 	return containerSpec
 }
 
+func int64PointerFromGRPC(v *gogotypes.Int64Value) *int64 {
+	if v == nil {
+		return nil
+	}
+	return &v.Value
+}
+
+func int64PointerToGRPC(v *int64) *gogotypes.Int64Value {
+	if v == nil {
+		return nil
+	}
+	return &gogotypes.Int64Value{Value: *v}
+}
+
 func initFromGRPC(v *gogotypes.BoolValue) *bool {
 	if v == nil {
 		return nil
 	}
-	value := v.GetValue()
-	return &value
+	return &v.Value
 }
 
 func initToGRPC(v *bool) *gogotypes.BoolValue {
@@ -233,24 +248,26 @@ func configReferencesFromGRPC(sr []*swarmapi.ConfigReference) []*types.ConfigRef
 
 func containerToGRPC(c *types.ContainerSpec) (*swarmapi.ContainerSpec, error) {
 	containerSpec := &swarmapi.ContainerSpec{
-		Image:      c.Image,
-		Labels:     c.Labels,
-		Command:    c.Command,
-		Args:       c.Args,
-		Hostname:   c.Hostname,
-		Env:        c.Env,
-		Dir:        c.Dir,
-		User:       c.User,
-		Groups:     c.Groups,
-		StopSignal: c.StopSignal,
-		TTY:        c.TTY,
-		OpenStdin:  c.OpenStdin,
-		ReadOnly:   c.ReadOnly,
-		Hosts:      c.Hosts,
-		Secrets:    secretReferencesToGRPC(c.Secrets),
-		Configs:    configReferencesToGRPC(c.Configs),
-		Isolation:  isolationToGRPC(c.Isolation),
-		Init:       initToGRPC(c.Init),
+		Image:            c.Image,
+		Labels:           c.Labels,
+		Command:          c.Command,
+		Args:             c.Args,
+		Hostname:         c.Hostname,
+		Env:              c.Env,
+		Dir:              c.Dir,
+		User:             c.User,
+		Groups:           c.Groups,
+		StopSignal:       c.StopSignal,
+		TTY:              c.TTY,
+		OpenStdin:        c.OpenStdin,
+		ReadOnly:         c.ReadOnly,
+		Hosts:            c.Hosts,
+		Secrets:          secretReferencesToGRPC(c.Secrets),
+		Configs:          configReferencesToGRPC(c.Configs),
+		Isolation:        isolationToGRPC(c.Isolation),
+		Init:             initToGRPC(c.Init),
+		MemorySwap:       c.MemorySwap,
+		MemorySwappiness: int64PointerToGRPC(c.MemorySwappiness),
 	}
 
 	if c.DNSConfig != nil {

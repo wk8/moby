@@ -2750,6 +2750,16 @@ definitions:
             description: "Run an init inside the container that forwards signals and reaps processes. This field is omitted if empty, and the default (as configured on the daemon) is used."
             type: "boolean"
             x-nullable: true
+          MemorySwap:
+            description: "Total memory limit (memory + swap). Set as `-1` to enable unlimited swap."
+            type: "integer"
+            format: "int64"
+          MemorySwappiness:
+            description: "Tune a container's memory swappiness behavior. Accepts an integer between 0 and 100."
+            type: "integer"
+            format: "int64"
+            minimum: 0
+            maximum: 100
       NetworkAttachmentSpec:
         description: |
           Read-only spec type for non-swarm containers attached to swarm overlay

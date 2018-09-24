@@ -181,10 +181,7 @@ func (sr *swarmRouter) createService(ctx context.Context, w http.ResponseWriter,
 	// Get returns "" if the header does not exist
 	encodedAuth := r.Header.Get("X-Registry-Auth")
 	cliVersion := r.Header.Get("version")
-	queryRegistry := false
-	if cliVersion != "" && versions.LessThan(cliVersion, "1.30") {
-		queryRegistry = true
-	}
+	queryRegistry := cliVersion != "" && versions.LessThan(cliVersion, "1.30")
 
 	resp, err := sr.backend.CreateService(service, encodedAuth, queryRegistry)
 	if err != nil {
@@ -215,10 +212,7 @@ func (sr *swarmRouter) updateService(ctx context.Context, w http.ResponseWriter,
 	flags.RegistryAuthFrom = r.URL.Query().Get("registryAuthFrom")
 	flags.Rollback = r.URL.Query().Get("rollback")
 	cliVersion := r.Header.Get("version")
-	queryRegistry := false
-	if cliVersion != "" && versions.LessThan(cliVersion, "1.30") {
-		queryRegistry = true
-	}
+	queryRegistry := cliVersion != "" && versions.LessThan(cliVersion, "1.30")
 
 	resp, err := sr.backend.UpdateService(vars["id"], version, service, flags, queryRegistry)
 	if err != nil {
