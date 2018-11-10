@@ -6,6 +6,7 @@ import (
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
+	"github.com/containerd/containerd/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
@@ -68,7 +69,7 @@ type Client interface {
 
 	Restore(ctx context.Context, containerID string, attachStdio StdioCallback) (alive bool, pid int, err error)
 
-	Create(ctx context.Context, containerID string, spec *specs.Spec, runtimeOptions interface{}) error
+	Create(ctx context.Context, containerID string, spec *specs.Spec, runtimeOptions interface{}, ociSpecOptions ...oci.SpecOpts) error
 	Start(ctx context.Context, containerID, checkpointDir string, withStdin bool, attachStdio StdioCallback) (pid int, err error)
 	SignalProcess(ctx context.Context, containerID, processID string, signal int) error
 	Exec(ctx context.Context, containerID, processID string, spec *specs.Process, withStdin bool, attachStdio StdioCallback) (int, error)

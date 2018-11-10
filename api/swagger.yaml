@@ -762,6 +762,23 @@ definitions:
           Runtime:
             type: "string"
             description: "Runtime to use with this container."
+          GpuConfig:
+            description: |
+              Which GPU devices to add the container, if any.
+
+              Note that only NVIDIA GPUs on Linux are supported for now; Docker furthermore assumes that the NVIDIA SDK has already been properly installed.
+            type: "object"
+            properties:
+              Devices:
+                description: |
+                  The IDs of the devices to add to the container - those are ints from 0 to n - 1, where n is the number of GPU devices available.
+                type: "array"
+                items:
+                  type: "integer"
+                  minimum: 0
+              All:
+                description: If true, then `devices` is ignored and all GPUs are added to the container
+                type: "boolean"
           # Applicable to Windows
           ConsoleSize:
             type: "array"

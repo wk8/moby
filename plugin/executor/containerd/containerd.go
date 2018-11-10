@@ -9,6 +9,7 @@ import (
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
+	"github.com/containerd/containerd/oci"
 	"github.com/containerd/containerd/runtime/linux/runctypes"
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/libcontainerd"
@@ -29,7 +30,7 @@ type ExitHandler interface {
 // TODO(@cpuguy83): This should really just be based off the containerd client interface.
 // However right now this whole package is tied to github.com/docker/docker/libcontainerd
 type Client interface {
-	Create(ctx context.Context, containerID string, spec *specs.Spec, runtimeOptions interface{}) error
+	Create(ctx context.Context, containerID string, spec *specs.Spec, runtimeOptions interface{}, ociSpecOptions ...oci.SpecOpts) error
 	Restore(ctx context.Context, containerID string, attachStdio libcontainerd.StdioCallback) (alive bool, pid int, err error)
 	Status(ctx context.Context, containerID string) (libcontainerd.Status, error)
 	Delete(ctx context.Context, containerID string) error

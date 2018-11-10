@@ -25,6 +25,7 @@ import (
 	containerderrors "github.com/containerd/containerd/errdefs"
 	"github.com/containerd/containerd/events"
 	"github.com/containerd/containerd/images"
+	"github.com/containerd/containerd/oci"
 	"github.com/containerd/containerd/runtime/linux/runctypes"
 	"github.com/containerd/typeurl"
 	"github.com/docker/docker/errdefs"
@@ -209,7 +210,7 @@ func (c *client) Restore(ctx context.Context, id string, attachStdio StdioCallba
 	return alive, pid, nil
 }
 
-func (c *client) Create(ctx context.Context, id string, ociSpec *specs.Spec, runtimeOptions interface{}) error {
+func (c *client) Create(ctx context.Context, id string, ociSpec *specs.Spec, runtimeOptions interface{}, ociSpecOptions ...oci.SpecOpts) error {
 	if ctr := c.getContainer(id); ctr != nil {
 		return errors.WithStack(newConflictError("id already in use"))
 	}
@@ -222,7 +223,7 @@ func (c *client) Create(ctx context.Context, id string, ociSpec *specs.Spec, run
 	c.logger.WithField("bundle", bdir).WithField("root", ociSpec.Root.Path).Debug("bundle dir created")
 
 	cdCtr, err := c.client.NewContainer(ctx, id,
-		containerd.WithSpec(ociSpec),
+		containerd.WithSpec(ociSpec, ociSpecOptions...),
 		// TODO(mlaventure): when containerd support lcow, revisit runtime value
 		containerd.WithRuntime(fmt.Sprintf("io.containerd.runtime.v1.%s", runtime.GOOS), runtimeOptions))
 	if err != nil {

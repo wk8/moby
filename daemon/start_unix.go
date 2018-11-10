@@ -7,7 +7,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/containerd/containerd/contrib/nvidia"
+	"github.com/containerd/containerd/oci"
 	"github.com/containerd/containerd/runtime/linux/runctypes"
+	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/container"
 	"github.com/docker/docker/errdefs"
 	"github.com/pkg/errors"
@@ -54,4 +57,23 @@ func (daemon *Daemon) getLibcontainerdCreateOptions(container *container.Contain
 	}
 
 	return opts, nil
+}
+
+func getOciSpecOptions(hostConfig *containertypes.HostConfig) []oci.SpecOpts {
+	gpuConfig := hostConfig.GpuConfig
+
+	var deviceOpt nvidia.Opts
+
+	if gpuConfig.All {
+		deviceOpt = nvidia.WithAllDevices
+	} else if len(gpuConfig.Devices) != 0 {
+		deviceOpt = nvidia.WithDevices(gpuConfig.Devices...)
+	}
+
+	if deviceOpt != nil {
+		// TODO (jrouge): do we want to surface the capabilities to the API too?
+		return []oci.SpecOpts{nvidia.WithGPUs(deviceOpt, nvidia.WithAllCapabilities)}
+	}
+
+	return nil
 }

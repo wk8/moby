@@ -351,6 +351,11 @@ type UpdateConfig struct {
 	RestartPolicy RestartPolicy
 }
 
+type GpuConfig struct {
+	Devices []int // the list of device IDs
+	All     bool  // if true, then `devices` is ignored and all GPUs are added to the container
+}
+
 // HostConfig the non-portable Config structure of a container.
 // Here, "non-portable" means "dependent of the host we are running on".
 // Portable information *should* appear in Config.
@@ -390,6 +395,7 @@ type HostConfig struct {
 	ShmSize         int64             // Total shm memory usage
 	Sysctls         map[string]string `json:",omitempty"` // List of Namespaced sysctls used for the container
 	Runtime         string            `json:",omitempty"` // Runtime to use with this container
+	GpuConfig       GpuConfig
 
 	// Applicable to Windows
 	ConsoleSize [2]uint   // Initial console size (height,width)
