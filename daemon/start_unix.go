@@ -7,6 +7,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"strconv"
+	"strings"
+
 	"github.com/containerd/containerd/contrib/nvidia"
 	"github.com/containerd/containerd/oci"
 	"github.com/containerd/containerd/runtime/linux/runctypes"
@@ -59,8 +62,10 @@ func (daemon *Daemon) getLibcontainerdCreateOptions(container *container.Contain
 	return opts, nil
 }
 
-func getOciSpecOptions(hostConfig *containertypes.HostConfig) []oci.SpecOpts {
-	gpuConfig := hostConfig.GpuConfig
+func (daemon *Daemon) getOciSpecOptions(cont *container.Container) []oci.SpecOpts {
+	hostGpuConfig := cont.HostConfig.GpuConfig
+	labelGpuConfig := parsGPUConfigOptions(cont.Config.Labels)
+	gpuConfig := daemon.mergeGpuConfigOptions(hostGpuConfig, labelGpuConfig)
 
 	var deviceOpt nvidia.Opts
 
@@ -76,4 +81,63 @@ func getOciSpecOptions(hostConfig *containertypes.HostConfig) []oci.SpecOpts {
 	}
 
 	return nil
+}
+
+func parsGPUConfigOptions(labels map[string]string) containertypes.GpuConfig {
+	var gpuConfig containertypes.GpuConfig
+	gpuDevice, ok := labels["annotation.deviceType"]
+	if !ok || gpuDevice != "nvidia.com/gpu" {
+		return gpuConfig
+	}
+	allDevices, ok := labels["annotation.allDevicesVisible"]
+	if ok && allDevices == "true" {
+		gpuConfig.All = true
+		return gpuConfig
+	}
+	visibleDevices, ok := labels["annotation.visibleDevices"]
+	if !ok {
+		return gpuConfig
+	}
+	gpuConfig.Devices = splitInto(visibleDevices)
+	return gpuConfig
+}
+
+func splitInto(val string) []int {
+	var result []int
+	if !strings.Contains(val, ",") {
+		num, err := strconv.Atoi(strings.TrimSpace(val))
+		if err != nil {
+			return result
+		}
+		result = append(result, num)
+		return result
+	}
+	toks := strings.Split(val, ",")
+	for _, c := range toks {
+		num, err := strconv.Atoi(strings.TrimSpace(c))
+		if err != nil {
+			continue
+		}
+		result = append(result, num)
+	}
+	return result
+}
+
+// Merge gpu options from the host config and from the label config. The host options take precedence.
+func (daemon *Daemon) mergeGpuConfigOptions(hostOptions, labelOptions containertypes.GpuConfig) containertypes.GpuConfig {
+	var mergedOptions containertypes.GpuConfig
+	if hostOptions.All {
+		mergedOptions.All = true
+	} else {
+		mergedOptions.All = labelOptions.All
+	}
+	if len(hostOptions.Devices) != 0 {
+		mergedOptions.Devices = hostOptions.Devices
+	} else {
+		mergedOptions.Devices = mergedOptions.Devices
+	}
+	if daemon.configStore.GpuEnabled && len(mergedOptions.Devices) == 0 {
+		mergedOptions.All = true
+	}
+	return mergedOptions
 }

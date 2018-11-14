@@ -129,6 +129,7 @@ type CommonConfig struct {
 	NetworkDiagnosticPort int                       `json:"network-diagnostic-port,omitempty"`
 	Pidfile               string                    `json:"pidfile,omitempty"`
 	RawLogs               bool                      `json:"raw-logs,omitempty"`
+	GpuEnabled            bool                      `json:"gpu-enabled",omitempty`
 	RootDeprecated        string                    `json:"graph,omitempty"`
 	Root                  string                    `json:"data-root,omitempty"`
 	ExecRoot              string                    `json:"exec-root,omitempty"`

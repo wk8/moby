@@ -176,7 +176,7 @@ func (daemon *Daemon) containerStart(container *container.Container, checkpoint 
 		return err
 	}
 
-	ociSpecOptions := getOciSpecOptions(container.HostConfig)
+	ociSpecOptions := daemon.getOciSpecOptions(container)
 
 	err = daemon.containerd.Create(context.Background(), container.ID, spec, createOptions, ociSpecOptions...)
 	if err != nil {
