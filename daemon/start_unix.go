@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-
 	"strconv"
 	"strings"
 
@@ -62,9 +61,9 @@ func (daemon *Daemon) getLibcontainerdCreateOptions(container *container.Contain
 	return opts, nil
 }
 
-func (daemon *Daemon) getOciSpecOptions(cont *container.Container) []oci.SpecOpts {
-	hostGpuConfig := cont.HostConfig.GpuConfig
-	labelGpuConfig := parsGPUConfigOptions(cont.Config.Labels)
+func (daemon *Daemon) getOciSpecOptions(container *container.Container) []oci.SpecOpts {
+	hostGpuConfig := container.HostConfig.GpuConfig
+	labelGpuConfig := parseGPUConfigOptions(container.Config.Labels)
 	gpuConfig := daemon.mergeGpuConfigOptions(hostGpuConfig, labelGpuConfig)
 
 	var deviceOpt nvidia.Opts
@@ -83,7 +82,7 @@ func (daemon *Daemon) getOciSpecOptions(cont *container.Container) []oci.SpecOpt
 	return nil
 }
 
-func parsGPUConfigOptions(labels map[string]string) containertypes.GpuConfig {
+func parseGPUConfigOptions(labels map[string]string) containertypes.GpuConfig {
 	var gpuConfig containertypes.GpuConfig
 	gpuDevice, ok := labels["annotation.deviceType"]
 	if !ok || gpuDevice != "nvidia.com/gpu" {
@@ -98,46 +97,36 @@ func parsGPUConfigOptions(labels map[string]string) containertypes.GpuConfig {
 	if !ok {
 		return gpuConfig
 	}
-	gpuConfig.Devices = splitInto(visibleDevices)
+	gpuConfig.Devices = parseDeviceIDs(visibleDevices)
 	return gpuConfig
 }
 
-func splitInto(val string) []int {
-	var result []int
-	if !strings.Contains(val, ",") {
-		num, err := strconv.Atoi(strings.TrimSpace(val))
-		if err != nil {
-			return result
-		}
-		result = append(result, num)
-		return result
-	}
-	toks := strings.Split(val, ",")
-	for _, c := range toks {
-		num, err := strconv.Atoi(strings.TrimSpace(c))
+func parseDeviceIDs(val string) (ids []int) {
+	for _, token := range strings.Split(val, ",") {
+		num, err := strconv.Atoi(strings.TrimSpace(token))
 		if err != nil {
 			continue
 		}
-		result = append(result, num)
+		ids = append(ids, num)
 	}
-	return result
+	return
 }
 
 // Merge gpu options from the host config and from the label config. The host options take precedence.
 func (daemon *Daemon) mergeGpuConfigOptions(hostOptions, labelOptions containertypes.GpuConfig) containertypes.GpuConfig {
 	var mergedOptions containertypes.GpuConfig
-	if hostOptions.All {
-		mergedOptions.All = true
-	} else {
-		mergedOptions.All = labelOptions.All
-	}
+
+	mergedOptions.All = hostOptions.All || labelOptions.All
+
 	if len(hostOptions.Devices) != 0 {
 		mergedOptions.Devices = hostOptions.Devices
 	} else {
-		mergedOptions.Devices = mergedOptions.Devices
+		mergedOptions.Devices = labelOptions.Devices
 	}
+
 	if daemon.configStore.GpuEnabled && len(mergedOptions.Devices) == 0 {
 		mergedOptions.All = true
 	}
+
 	return mergedOptions
 }

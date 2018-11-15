@@ -3,7 +3,6 @@ package daemon // import "github.com/docker/docker/daemon"
 import (
 	"github.com/Microsoft/opengcs/client"
 	"github.com/containerd/containerd/oci"
-	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/container"
 )
 
@@ -39,7 +38,7 @@ func (daemon *Daemon) getLibcontainerdCreateOptions(container *container.Contain
 	return nil, nil
 }
 
-func getOciSpecOptions(hostConfig *containertypes.HostConfig) []oci.SpecOpts {
+func (daemon *Daemon) getOciSpecOptions(*container.Container) []oci.SpecOpts {
 	// We don't support any special OCI spec options for windows
 	return nil
 }
