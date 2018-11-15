@@ -352,8 +352,9 @@ type UpdateConfig struct {
 }
 
 type GpuConfig struct {
-	Devices []int // the list of device IDs
-	All     bool  // if true, then `devices` is ignored and all GPUs are added to the container
+	DeviceUUIDs []string // takes precedence over int IDs, if given
+	Devices     []int    // the list of device IDs
+	All         bool     // if true, then `devices` is ignored and all GPUs are added to the container
 }
 
 // HostConfig the non-portable Config structure of a container.
