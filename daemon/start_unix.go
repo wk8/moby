@@ -109,7 +109,7 @@ func (daemon *Daemon) mergeGpuConfigOptions(hostOptions, labelOptions containert
 	}
 
 	if !areGpuOptionsEmpty(labelOptions) {
-		return hostOptions
+		return labelOptions
 	}
 
 	return containertypes.GpuConfig{All: daemon.configStore.GpuEnabled}
