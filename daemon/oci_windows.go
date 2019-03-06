@@ -310,10 +310,10 @@ func (daemon *Daemon) setWindowsCredentialSpec(c *container.Container, s *specs.
 		}
 
 		credSpecSplits := strings.SplitN(optSplits[1], "://", 2)
-		value := credSpecSplits[1]
 		if len(credSpecSplits) != 2 || credSpecSplits[1] == "" {
 			return errInvalidCredentialSpecSecOpt
 		}
+		value := credSpecSplits[1]
 
 		var err error
 		switch strings.ToLower(credSpecSplits[0]) {

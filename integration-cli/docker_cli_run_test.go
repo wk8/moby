@@ -4142,27 +4142,27 @@ func (s *DockerSuite) TestRunStoppedLoggingDriverNoLeak(c *check.C) {
 }
 
 // Handles error conditions for --credentialspec. Validating E2E success cases
-// requires additional infrastructure (AD for example) on CI servers.
 func (s *DockerSuite) TestRunCredentialSpecFailures(c *check.C) {
 	testRequires(c, DaemonIsWindows)
 	attempts := []struct{ value, expectedError string }{
-		{"rubbish", "invalid credential spec security option - value must be prefixed file:// or registry://"},
-		{"rubbish://", "invalid credential spec security option - value must be prefixed file:// or registry://"},
-		{"file://", "no value supplied for file:// credential spec security option"},
-		{"registry://", "no value supplied for registry:// credential spec security option"},
+		{"rubbish", "invalid credential spec security option - value must be prefixed by 'file://', 'registry://', or 'base64://' followed by a non-empty value"},
+		{"rubbish://", "invalid credential spec security option - value must be prefixed by 'file://', 'registry://', or 'base64://' followed by a non-empty value"},
+		{"file://", "invalid credential spec security option - value must be prefixed by 'file://', 'registry://', or 'base64://' followed by a non-empty value"},
+		{"registry://", "invalid credential spec security option - value must be prefixed by 'file://', 'registry://', or 'base64://' followed by a non-empty value"},
 		{`file://c:\blah.txt`, "path cannot be absolute"},
 		{`file://doesnotexist.txt`, "The system cannot find the file specified"},
 	}
 	for _, attempt := range attempts {
 		_, _, err := dockerCmdWithError("run", "--security-opt=credentialspec="+attempt.value, "busybox", "true")
 		c.Assert(err, checker.NotNil, check.Commentf("%s expected non-nil err", attempt.value))
-		c.Assert(err.Error(), checker.Contains, attempt.expectedError, check.Commentf("%s expected %s got %s", attempt.value, attempt.expectedError, err))
+		c.Check(err.Error(), checker.Contains, attempt.expectedError, check.Commentf("%s expected %s got %s", attempt.value, attempt.expectedError, err))
 	}
 }
 
 // Windows specific test to validate credential specs with a well-formed spec.
 // Note it won't actually do anything in CI configuration with the spec, but
 // it should not fail to run a container.
+// requires additional infrastructure (AD for example) on CI servers.
 func (s *DockerSuite) TestRunCredentialSpecWellFormed(c *check.C) {
 	testRequires(c, DaemonIsWindows, testEnv.IsLocalDaemon)
 	validCS := readFile(`fixtures\credentialspecs\valid.json`, c)
