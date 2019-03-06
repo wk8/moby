@@ -7,8 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/integration/internal/container"
+	"github.com/docker/docker/internal/test/request"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
 	"gotest.tools/poll"
@@ -99,5 +102,77 @@ func TestUpdateCPUQuota(t *testing.T) {
 		assert.Equal(t, 0, res.ExitCode)
 
 		assert.Check(t, is.Equal(strconv.FormatInt(test.update, 10), strings.TrimSpace(res.Stdout())))
+	}
+}
+
+func TestUpdatePidsLimit(t *testing.T) {
+	skip.If(t, testEnv.DaemonInfo.OSType == "windows")
+	skip.If(t, !testEnv.DaemonInfo.PidsLimit)
+
+	defer setupTest(t)()
+	apiClient := testEnv.APIClient()
+	oldAPIclient := request.NewAPIClient(t, client.WithVersion("1.24"))
+	ctx := context.Background()
+
+	cID := container.Run(t, ctx, apiClient)
+
+	intPtr := func(i int64) *int64 {
+		return &i
+	}
+
+	for _, test := range []struct {
+		desc     string
+		oldAPI   bool
+		update   *int64
+		expect   int64
+		expectCg string
+	}{
+		{desc: "update from none", update: intPtr(32), expect: 32, expectCg: "32"},
+		{desc: "no change", update: nil, expectCg: "32"},
+		{desc: "update lower", update: intPtr(16), expect: 16, expectCg: "16"},
+		{desc: "update on old api ignores value", oldAPI: true, update: intPtr(10), expect: 16, expectCg: "16"},
+		{desc: "unset limit", update: intPtr(0), expect: 0, expectCg: "max"},
+	} {
+		c := apiClient
+		if test.oldAPI {
+			c = oldAPIclient
+		}
+
+		var before types.ContainerJSON
+		if test.update == nil {
+			var err error
+			before, err = c.ContainerInspect(ctx, cID)
+			assert.NilError(t, err)
+		}
+
+		t.Run(test.desc, func(t *testing.T) {
+			_, err := c.ContainerUpdate(ctx, cID, containertypes.UpdateConfig{
+				Resources: containertypes.Resources{
+					PidsLimit: test.update,
+				},
+			})
+			assert.NilError(t, err)
+
+			inspect, err := c.ContainerInspect(ctx, cID)
+			assert.NilError(t, err)
+			assert.Assert(t, inspect.HostConfig.Resources.PidsLimit != nil)
+
+			if test.update == nil {
+				assert.Assert(t, before.HostConfig.Resources.PidsLimit != nil)
+				assert.Equal(t, *before.HostConfig.Resources.PidsLimit, *inspect.HostConfig.Resources.PidsLimit)
+			} else {
+				assert.Equal(t, *inspect.HostConfig.Resources.PidsLimit, test.expect)
+			}
+
+			ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+			defer cancel()
+
+			res, err := container.Exec(ctx, c, cID, []string{"cat", "/sys/fs/cgroup/pids/pids.max"})
+			assert.NilError(t, err)
+			assert.Assert(t, is.Len(res.Stderr(), 0))
+
+			out := strings.TrimSpace(res.Stdout())
+			assert.Equal(t, out, test.expectCg)
+		})
 	}
 }
